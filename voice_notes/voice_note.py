@@ -10,7 +10,7 @@ import functools
 
 import logging
 from botocore.exceptions import ClientError
-from voice_notes.notion import basics
+from voice_notes.notion.basics import RichText, Block
 from voice_notes.notion.search import get_daily_page_id
 
 from voice_notes.transcript import Transcript
@@ -51,6 +51,7 @@ class VoiceNote:
 
     @property
     def ingress_relative_path(self) -> Optional[Path]:
+        # a sanity check in order to ensure that we don't
         assert "mp3" in self.name
         try:
             return self.path.relative_to(INGRESS_PATH)
@@ -152,12 +153,12 @@ class VoiceNote:
     def to_block(self, file=True):
         assert self.status >= VoiceNoteStatus.Transcribed
         t = Transcript.from_aws_transcribe_json(self.transcript["results"])
-        block = t.to_block(basics.bold(self.name))
+        block = t.to_block(RichText.bold(self.name))
 
         if file:
-            basics.Block.prepend_child(
+            Block.prepend_child(
                 block,
-                basics.Block.href(
+                Block.href(
                     f"{os.environ['AWS_SLUG']}{self.name}", f"AWS Console: {self.name}"
                 ),
             )

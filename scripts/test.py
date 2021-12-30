@@ -1,6 +1,6 @@
+"""This is just for testing ideas and ensuring methods work interactively."""
 import argparse
-from voice_notes import global_config, Transcript, VoiceNote
-from voice_notes.notion.search import get_page_matching_exact_title
+from voice_notes import global_config, VoiceNote
 
 notion = global_config.notion_client
 
@@ -17,13 +17,3 @@ if __name__ == "__main__":
 
     item: VoiceNote = global_config.get_by_name(args.file)
     print(item.date)
-
-# list_users_response = notion.users.list()
-# pprint(list_users_response)
-
-# notion.blocks.children.append(
-#    block_id=personal_journal_page.id,
-#    children=[
-#        Block.child_page("child_page_test"),
-#    ]
-# )

@@ -3,7 +3,7 @@ import datetime
 import math
 from typing import Any, Dict, List, Optional
 
-from voice_notes.notion import basics
+from voice_notes.notion.basics import RichText, Block
 
 __all__ = ["Transcript"]
 
@@ -65,7 +65,7 @@ class TextItem(TranscriptItem):
     segment_index: int = 0
 
     def to_rich_text(self):
-        return basics.plain_text(self.text)
+        return RichText.plain_text(self.text)
 
     def accepts(self, other: AWSTranscriptItem) -> bool:
         if not isinstance(other, AWSTranscriptItem):
@@ -102,7 +102,7 @@ class Timestamp(TranscriptItem):
     delta: datetime.timedelta = None
 
     def to_rich_text(self):
-        return basics.code(str(self))
+        return RichText.code(str(self))
 
     @classmethod
     def from_start_time(cls, start_time):
@@ -179,13 +179,13 @@ class Transcript:
         children = []
         for group in self.items_by_speaker():
             speaker = [g for g in group if isinstance(g, TextItem)][0].speaker
-            text_items = [basics.bold(speaker), basics.plain_text(": ")]
+            text_items = [RichText.bold(speaker), RichText.plain_text(": ")]
             for g in group:
                 text_items.append(g.to_rich_text())
-                text_items.append(basics.plain_text(" "))
-            children.append(basics.Block.paragraph(text_items))
+                text_items.append(RichText.plain_text(" "))
+            children.append(Block.paragraph(text_items))
 
-        return basics.Block.paragraph(block_title, children=children)
+        return Block.paragraph(block_title, children=children)
 
     def __post_init__(self):
         self.next_timestamp = self.timestamp_every

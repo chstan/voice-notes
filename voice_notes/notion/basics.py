@@ -4,6 +4,7 @@ from typing import Any, List
 __all__ = [
     "BlockType",
     "Block",
+    "RichText",
     "simple_title_properties",
     "parent_ref",
 ]
@@ -28,43 +29,44 @@ class BlockType(str, Enum):
     File = "file"
     ToDo = "to_do"
     Toggle = "toggle"
-    ChildPage = "child_page"
 
 
 def simple_title_properties(title: str):
     return {"type": "title", "title": [{"type": "text", "text": {"content": title}}]}
 
 
-def plain_text(text):
-    return {
-        "plain_text": text,
-        "annotations": {
-            "bold": False,
-            "italic": False,
-            "strikethrough": False,
-            "underline": False,
-            "code": False,
-            "color": "default",
-        },
-        "type": "text",
-        "text": {
-            "content": text,
-        },
-    }
+class RichText:
+    @staticmethod
+    def plain_text(text):
+        return {
+            "plain_text": text,
+            "annotations": {
+                "bold": False,
+                "italic": False,
+                "strikethrough": False,
+                "underline": False,
+                "code": False,
+                "color": "default",
+            },
+            "type": "text",
+            "text": {
+                "content": text,
+            },
+        }
 
+    @staticmethod
+    def code(text):
+        block = RichText.plain_text(text)
 
-def code(text):
-    block = plain_text(text)
+        block["annotations"]["code"] = True
+        return block
 
-    block["annotations"]["code"] = True
-    return block
+    @staticmethod
+    def bold(text):
+        block = RichText.plain_text(text)
 
-
-def bold(text):
-    block = plain_text(text)
-
-    block["annotations"]["bold"] = True
-    return block
+        block["annotations"]["bold"] = True
+        return block
 
 
 class Block:
@@ -76,7 +78,7 @@ class Block:
         as_rich_text = []
         for possible_item in possibly_text:
             if isinstance(possible_item, str):
-                possible_item = plain_text(possible_item)
+                possible_item = RichText.plain_text(possible_item)
 
             as_rich_text.append(possible_item)
 
@@ -129,23 +131,8 @@ class Block:
         }
 
     @staticmethod
-    def file(external_url, caption):
-        caption = Block.wrap_rich_text_list(caption)
-        return {
-            "object": "block",
-            "type": BlockType.File,
-            "caption": caption,
-            BlockType.File: {
-                "type": "external",
-                "external": {
-                    "url": external_url,
-                },
-            },
-        }
-
-    @staticmethod
     def href(link_url, text):
-        text = plain_text(text)
+        text = RichText.plain_text(text)
         text["href"] = link_url
         text["text"]["link"] = {
             "type": "url",
@@ -172,12 +159,12 @@ class Block:
         }
 
     @staticmethod
-    def child_page(title: str):
-        title = Block.wrap_rich_text_list(title)
-        return {"object": "block", "type": "child_page", "child_page": {"title": title}}
-
-    @staticmethod
     def prepend_child(block, child):
+        """Insert a new child at the front of the block children.
+
+        Like the rest of the methods here, this is for constructing block objects
+        and consequently does not actually talk to the API.
+        """
         block_type = block["type"]
         block[block_type]["children"] = [child] + block[block_type]["children"]
         return block
