@@ -8,11 +8,13 @@ __all__ = [
     "parent_ref",
 ]
 
+
 def parent_ref(page_id: str):
     return {
         "type": "page_id",
         "page_id": page_id,
     }
+
 
 class BlockType(str, Enum):
     # Not complete, but enough to get the general idea and to implement what we need
@@ -28,11 +30,10 @@ class BlockType(str, Enum):
     Toggle = "toggle"
     ChildPage = "child_page"
 
+
 def simple_title_properties(title: str):
-    return {
-        "type": "title",
-        "title": [{ "type": "text", "text": {"content": title}}]
-    }
+    return {"type": "title", "title": [{"type": "text", "text": {"content": title}}]}
+
 
 def plain_text(text):
     return {
@@ -48,8 +49,9 @@ def plain_text(text):
         "type": "text",
         "text": {
             "content": text,
-        }
+        },
     }
+
 
 def code(text):
     block = plain_text(text)
@@ -57,9 +59,10 @@ def code(text):
     block["annotations"]["code"] = True
     return block
 
+
 def bold(text):
     block = plain_text(text)
-    
+
     block["annotations"]["bold"] = True
     return block
 
@@ -69,14 +72,14 @@ class Block:
     def wrap_rich_text_list(possibly_text):
         if not isinstance(possibly_text, list):
             possibly_text = [possibly_text]
-        
+
         as_rich_text = []
         for possible_item in possibly_text:
             if isinstance(possible_item, str):
                 possible_item = plain_text(possible_item)
-            
+
             as_rich_text.append(possible_item)
-    
+
         return as_rich_text
 
     @staticmethod
@@ -89,13 +92,9 @@ class Block:
         return {
             "object": "block",
             "type": BlockType.ToDo,
-            BlockType.ToDo: {
-                "text": text,
-                "checked": checked,
-                "children": children 
-            },
-
+            BlockType.ToDo: {"text": text, "checked": checked, "children": children},
         }
+
     @staticmethod
     def h1(text):
         text = Block.wrap_rich_text_list(text)
@@ -141,7 +140,7 @@ class Block:
                 "external": {
                     "url": external_url,
                 },
-            }
+            },
         }
 
     @staticmethod
@@ -155,7 +154,7 @@ class Block:
         text["annotations"]["underline"] = True
         text["annotations"]["color"] = "blue"
 
-        return Block.paragraph([text], []) 
+        return Block.paragraph([text], [])
 
     @staticmethod
     def paragraph(text, children: List[Any] = None):
@@ -169,19 +168,13 @@ class Block:
             BlockType.Paragraph: {
                 "text": text,
                 "children": children,
-            }
+            },
         }
 
     @staticmethod
     def child_page(title: str):
         title = Block.wrap_rich_text_list(title)
-        return {
-            "object": "block",
-            "type": "child_page",
-            "child_page": {
-                "title": title
-            }
-        }
+        return {"object": "block", "type": "child_page", "child_page": {"title": title}}
 
     @staticmethod
     def prepend_child(block, child):

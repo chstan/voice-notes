@@ -6,7 +6,7 @@ from voice_notes.notion.template_journal_page import get_or_create_daily_page_id
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--day_delta", type=int, default=0)
-   
+
 notion = global_config.notion_client
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ from voice_notes.notion import basics
 
 __all__ = ["Transcript"]
 
+
 @dataclass
 class AWSTimestamped:
     start_time: Optional[float] = None
@@ -19,6 +20,7 @@ class AWSTimestamped:
         if self.end_time:
             self.end_time = float(self.end_time)
 
+
 @dataclass
 class AWSSegment(AWSTimestamped):
     speaker_label: str = "spk_0"
@@ -28,6 +30,7 @@ class AWSSegment(AWSTimestamped):
     def __post_init__(self):
         super().__post_init__()
         self.speaker_label = self.speaker_label.replace("spk_", "S")
+
 
 @dataclass
 class AWSTranscriptItem(AWSTimestamped):
@@ -67,12 +70,12 @@ class TextItem(TranscriptItem):
     def accepts(self, other: AWSTranscriptItem) -> bool:
         if not isinstance(other, AWSTranscriptItem):
             return False
-        
+
         if other.speaker != self.speaker:
             return False
         elif other.segment.index != self.segment_index:
             return False
-        
+
         return True
 
     def __str__(self) -> str:
@@ -127,8 +130,11 @@ class Transcript:
 
         t = cls()
 
-        t.n_speakers = aws_json['speaker_labels']["speakers"]
-        t.segments = [AWSSegment(index=i, **s) for i, s in enumerate(aws_json['speaker_labels']["segments"])]
+        t.n_speakers = aws_json["speaker_labels"]["speakers"]
+        t.segments = [
+            AWSSegment(index=i, **s)
+            for i, s in enumerate(aws_json["speaker_labels"]["segments"])
+        ]
         t.segment_index = 0
 
         for item in aws_json["items"]:
@@ -149,11 +155,11 @@ class Transcript:
                 if current_speaker != item.speaker:
                     current_speaker = item.speaker
                     will_append = False
-            
+
             if not will_append:
                 by_speaker.append(current)
                 current = []
-            
+
             current.append(item)
 
         by_speaker.append(current)
@@ -179,10 +185,7 @@ class Transcript:
                 text_items.append(basics.plain_text(" "))
             children.append(basics.Block.paragraph(text_items))
 
-        return basics.Block.paragraph(
-            block_title,
-            children=children
-        )
+        return basics.Block.paragraph(block_title, children=children)
 
     def __post_init__(self):
         self.next_timestamp = self.timestamp_every
@@ -208,6 +211,12 @@ class Transcript:
         if self.items and self.items[-1].accepts(token):
             self.items[-1] += token
         else:
-            self.items.append(TextItem(token.content, speaker=token.speaker, segment_index=token.segment.index))
+            self.items.append(
+                TextItem(
+                    token.content,
+                    speaker=token.speaker,
+                    segment_index=token.segment.index,
+                )
+            )
 
         return self

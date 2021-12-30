@@ -1,9 +1,15 @@
 import datetime
 
-from .search import PageResult, get_by_month_index_id, get_daily_page_id, get_monthly_page_id
+from .search import (
+    PageResult,
+    get_by_month_index_id,
+    get_daily_page_id,
+    get_monthly_page_id,
+)
 from .basics import parent_ref, simple_title_properties, Block
 
-__all__ = ["new_monthly_page", "new_daily_page", 'get_or_create_daily_page_id']
+__all__ = ["new_monthly_page", "new_daily_page", "get_or_create_daily_page_id"]
+
 
 def new_monthly_page(for_date: datetime.datetime):
     title_for_page = f"Personal Journal {for_date.year}/{for_date.month}"
@@ -11,7 +17,8 @@ def new_monthly_page(for_date: datetime.datetime):
     children = []
     return properties, children
 
-def new_daily_page(for_date: datetime.datetime): 
+
+def new_daily_page(for_date: datetime.datetime):
     title_for_page = f"Personal Journal {for_date.year}/{for_date.month}/{for_date.day}"
     properties = {"title": simple_title_properties(title_for_page)}
     children = [
@@ -22,6 +29,7 @@ def new_daily_page(for_date: datetime.datetime):
     ]
 
     return properties, children
+
 
 def get_or_create_daily_page_id(notion, query_date: datetime.datetime) -> str:
     journal_page_id = get_by_month_index_id(notion)
@@ -36,7 +44,7 @@ def get_or_create_daily_page_id(notion, query_date: datetime.datetime) -> str:
             children=children,
         )
         monthly_page_id = PageResult(**created_page).id
-    
+
     # Check if we need to make a daily level organization page
     daily_page_id = get_daily_page_id(notion, query_date)
 
@@ -48,6 +56,5 @@ def get_or_create_daily_page_id(notion, query_date: datetime.datetime) -> str:
             children=children,
         )
         daily_page_id = PageResult(**created_page).id
-    
+
     return daily_page_id
- 

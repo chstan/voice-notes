@@ -56,7 +56,7 @@ class VoiceNote:
             return self.path.relative_to(INGRESS_PATH)
         except ValueError:
             return None
-    
+
     @property
     def s3_url(self) -> str:
         raise NotImplementedError
@@ -83,10 +83,11 @@ class VoiceNote:
 
         new_path = ARCHIVE_PATH / rel_path
         if new_path.exists():
-            warnings.warn("File is already imported. Skipping and removing ingress file.")
+            warnings.warn(
+                "File is already imported. Skipping and removing ingress file."
+            )
             os.remove(str((INGRESS_PATH / rel_path).absolute()))
             return
-
 
         shutil.move(self.path, new_path)
         self.path = new_path
@@ -140,7 +141,7 @@ class VoiceNote:
 
         self.transcript = transcript
         return True
-    
+
     @bump_status(VoiceNoteStatus.S3)
     def reset_transcript(self, config: Config):
         assert self.status > VoiceNoteStatus.S3
@@ -155,8 +156,10 @@ class VoiceNote:
 
         if file:
             basics.Block.prepend_child(
-                block, 
-                basics.Block.href(f"{os.environ['AWS_SLUG']}{self.name}", f"AWS Console: {self.name}")
+                block,
+                basics.Block.href(
+                    f"{os.environ['AWS_SLUG']}{self.name}", f"AWS Console: {self.name}"
+                ),
             )
 
         return block
@@ -164,7 +167,7 @@ class VoiceNote:
     @bump_status(VoiceNoteStatus.Notion)
     def add_to_notion(self, config: Config):
         if self.status == VoiceNoteStatus.Notion:
-            return 
+            return
 
         page_id = get_daily_page_id(config.notion_client, self.date)
         config.notion_client.blocks.children.append(
@@ -176,7 +179,7 @@ class VoiceNote:
 
     @property
     def date(self) -> datetime.datetime:
-        date, _time = self.name.split("_") 
+        date, _time = self.name.split("_")
         year = int(f"20{date[:2]}")
         month = int(date[2:4])
         day = int(date[4:])

@@ -18,12 +18,12 @@ if __name__ == "__main__":
     item: VoiceNote = global_config.get_by_name(args.file)
     print(item.date)
 
-#list_users_response = notion.users.list()
+# list_users_response = notion.users.list()
 # pprint(list_users_response)
 
-#notion.blocks.children.append(
+# notion.blocks.children.append(
 #    block_id=personal_journal_page.id,
 #    children=[
 #        Block.child_page("child_page_test"),
 #    ]
-#)
+# )

@@ -49,9 +49,8 @@ class Config:
     def notion_client(self) -> Client:
         if not self._notion_client:
             self._notion_client = Client(auth=os.environ["NOTION_TOKEN"])
-        
+
         return self._notion_client
-        
 
     def __post_init__(self):
         self.inject_secrets()
