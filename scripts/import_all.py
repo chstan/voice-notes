@@ -8,7 +8,9 @@ from voice_notes import VoiceNote, INGRESS_PATH, global_config
 
 
 if __name__ == "__main__":
-    for_import = INGRESS_PATH.glob("*.mp3")
+    # sort here so that we get notes in the order they were created when they get
+    # added to Notion
+    for_import = sorted(list(INGRESS_PATH.glob("*.mp3")), key=lambda p: p.stem)
 
     logging.info("Checking for new items...")
     for item in tqdm(for_import):
@@ -17,7 +19,7 @@ if __name__ == "__main__":
 
     logging.info("Checking to see if previously imported need processing...")
     with global_config.db() as db:
-        items = dict(db).values()
+        items = sorted(list(dict(db).values()), key=lambda item: item.name)
 
     for item in tqdm(items):
         try:
