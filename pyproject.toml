@@ -16,6 +16,7 @@ notion = "^0.0.28"
 [tool.poetry.dev-dependencies]
 pydocstyle = "^6.1.1"
 black = "^21.12b0"
+toml = "^0.10.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
