@@ -1,3 +1,4 @@
+"""Utilities for generating JSON objects representing Notion blocks and rich text."""
 from enum import Enum
 from typing import Any, List
 
@@ -11,6 +12,7 @@ __all__ = [
 
 
 def parent_ref(page_id: str):
+    """Format a `page_id` as a parent reference for new page creation."""
     return {
         "type": "page_id",
         "page_id": page_id,
@@ -18,8 +20,12 @@ def parent_ref(page_id: str):
 
 
 class BlockType(str, Enum):
-    # Not complete, but enough to get the general idea and to implement what we need
-    # you can find the rest here: https://developers.notion.com/reference/block
+    """Enumerates supported block types for Notion.
+
+    Not complete, but enough to get the general idea and to implement what we need
+    you can find the rest here: https://developers.notion.com/reference/block
+    """
+
     Paragraph = "paragraph"
     Heading1 = "heading_1"
     Heading2 = "heading_2"
@@ -32,12 +38,20 @@ class BlockType(str, Enum):
 
 
 def simple_title_properties(title: str):
+    """Generate a full property block for a new page consisting only of a title."""
     return {"type": "title", "title": [{"type": "text", "text": {"content": title}}]}
 
 
 class RichText:
+    """Namespaced utilities for creating Notion rich text objects."""
+
     @staticmethod
     def plain_text(text):
+        """Create a plain rich text object.
+
+        This is used as a utility method for other rich text
+        creation routines.
+        """
         return {
             "plain_text": text,
             "annotations": {
@@ -56,6 +70,7 @@ class RichText:
 
     @staticmethod
     def code(text):
+        """Create a code-type rich text object."""
         block = RichText.plain_text(text)
 
         block["annotations"]["code"] = True
@@ -63,6 +78,7 @@ class RichText:
 
     @staticmethod
     def bold(text):
+        """Create a bold rich text object."""
         block = RichText.plain_text(text)
 
         block["annotations"]["bold"] = True
@@ -70,8 +86,16 @@ class RichText:
 
 
 class Block:
+    """Namespaced utilities for creating Notion block objects."""
+
     @staticmethod
     def wrap_rich_text_list(possibly_text):
+        """Ensure that the argument is a list of rich text objects.
+
+        If the argument is singular, it will be turned into a list.
+        Each item will have `RichText.plain_text` called on it if
+        it is only a `str`.
+        """
         if not isinstance(possibly_text, list):
             possibly_text = [possibly_text]
 
@@ -86,6 +110,7 @@ class Block:
 
     @staticmethod
     def todo(text, checked=False, children=None):
+        """Create a TO_DO block."""
         text = Block.wrap_rich_text_list(text)
 
         if children is None:
@@ -99,6 +124,7 @@ class Block:
 
     @staticmethod
     def h1(text):
+        """Create a `heading_1` block. These cannot have children."""
         text = Block.wrap_rich_text_list(text)
         return {
             "object": "block",
@@ -110,6 +136,7 @@ class Block:
 
     @staticmethod
     def h2(text):
+        """Create a `heading_2` block. These cannot have children."""
         text = Block.wrap_rich_text_list(text)
         return {
             "object": "block",
@@ -121,6 +148,7 @@ class Block:
 
     @staticmethod
     def h3(text):
+        """Create a `heading_3` block. These cannot have children."""
         text = Block.wrap_rich_text_list(text)
         return {
             "object": "block",
@@ -132,6 +160,7 @@ class Block:
 
     @staticmethod
     def href(link_url, text):
+        """Create a paragraph block which represents a link with standard styling."""
         text = RichText.plain_text(text)
         text["href"] = link_url
         text["text"]["link"] = {
@@ -145,6 +174,7 @@ class Block:
 
     @staticmethod
     def paragraph(text, children: List[Any] = None):
+        """Create a paragraph block."""
         text = Block.wrap_rich_text_list(text)
         if children is None:
             children = []

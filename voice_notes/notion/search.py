@@ -1,9 +1,10 @@
+"""Tools for searching for pages."""
 import datetime
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
 __all__ = [
-    "PageResult",
+    "Page",
     "match_page",
     "get_page_matching_exact_title",
     "get_monthly_page_id",
@@ -14,7 +15,9 @@ __all__ = [
 
 
 @dataclass
-class PageResult:
+class Page:
+    """Representation of a Notion page."""
+
     archived: bool = field(repr=False)
     id: str
     url: str = field(repr=False)
@@ -32,12 +35,14 @@ class PageResult:
 
     @property
     def plain_text_title(self):
+        """Get the plain text title by looking into the properties rich text objects."""
         return self.properties["title"]["title"][0]["plain_text"]
 
 
 def get_page_matching_exact_title(notion, title: str) -> Optional[str]:
+    """Find a unique page whose plain text title exactly matches `title`."""
     pages = notion.search(query=title)["results"]
-    pages = [PageResult(**p) for p in pages]
+    pages = [Page(**p) for p in pages]
     pages = [p for p in pages if p.plain_text_title == title]
 
     assert len(pages) < 2
@@ -45,20 +50,22 @@ def get_page_matching_exact_title(notion, title: str) -> Optional[str]:
 
 
 def get_by_month_index_id(notion) -> str:
+    """Fetch the ID of the top level journal index."""
     personal_journal_page = notion.search(query=f"Personal Journals by Month")[
         "results"
     ]
-    personal_journal_page = [PageResult(**p) for p in personal_journal_page]
+    personal_journal_page = [Page(**p) for p in personal_journal_page]
     assert len(personal_journal_page) == 1
     personal_journal_page = personal_journal_page[0]
     return personal_journal_page.id
 
 
 def get_monthly_page_id(notion, query_date: datetime.datetime) -> Optional[str]:
+    """Fetch the ID of a monthly journal page index for `query_date`."""
     monthly_slug = f"{query_date.year}/{query_date.month}"
     reject_daily_slug = f"{query_date.year}/{query_date.month}/"
     page_search = notion.search(query=f"Personal Journal {monthly_slug}")["results"]
-    results = [PageResult(**p) for p in page_search]
+    results = [Page(**p) for p in page_search]
     results = [
         r
         for r in results
@@ -71,9 +78,10 @@ def get_monthly_page_id(notion, query_date: datetime.datetime) -> Optional[str]:
 
 
 def get_daily_page_id(notion, query_date: datetime.datetime) -> Optional[str]:
+    """Fetch the ID of a daily journal page for `query_date`."""
     daily_slug = f"{query_date.year}/{query_date.month}/{query_date.day}"
     page_search = notion.search(query=f"Personal Journal {daily_slug}")["results"]
-    results = [PageResult(**p) for p in page_search]
+    results = [Page(**p) for p in page_search]
 
     assert len(results) < 2
     return results[0].id if results else None

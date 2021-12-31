@@ -1,3 +1,11 @@
+"""Utility script which generates my daily journaling and agenda page.
+
+This more or less provides the functionality of a template
+but is more customizable and automates the page creation process.
+
+This is registered ultimately in my crontab so that pages get created 
+half an hour early (11:30PM).
+"""
 import datetime
 import argparse
 

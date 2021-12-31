@@ -1,3 +1,9 @@
+"""Provides a summary of the status of all managed voice notes.
+
+Only voice notes which have not been synchronized all the way to Notion are 
+shown with their name. This allows easily finding items which ran into an error
+someplace for debugging.
+"""
 from collections import Counter
 
 from voice_notes import global_config

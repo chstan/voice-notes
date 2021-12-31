@@ -1,3 +1,4 @@
+"""Import all of the voice notes in the ingress folder."""
 import sys
 import logging
 

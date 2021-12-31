@@ -1,3 +1,4 @@
+"""Implements batch transcription on AWS Transcribe."""
 import uuid
 import logging
 from dataclasses import field, dataclass
@@ -12,6 +13,8 @@ __all__ = ["TranscriptionStatus", "TranscriptionJob"]
 
 
 class TranscriptionStatus(str, Enum):
+    """Enumerates statuses of AWS Transcribe jobs."""
+
     IN_PROGRESS = "IN_PROGRESS"
     FAILED = "FAILED"
     COMPLETED = "COMPLETED"
@@ -19,6 +22,8 @@ class TranscriptionStatus(str, Enum):
 
 @dataclass
 class TranscriptionJob:
+    """Utility class for modeling AWS Transcribe batch jobs."""
+
     job_uri: str
     config: Config
 
@@ -27,6 +32,7 @@ class TranscriptionJob:
     started: bool = False
 
     def start(self):
+        """Start a job on AWS Transcribe for a media file previously placed on S3."""
         self.config.transcription.start_transcription_job(
             TranscriptionJobName=self.job_name,
             Media={"MediaFileUri": self.job_uri},
@@ -44,6 +50,7 @@ class TranscriptionJob:
     def from_existing_job(
         cls, config: Config, job_name: str
     ) -> Type["TranscriptionJob"]:
+        """Instatiate/import from an existing Transcribe job name."""
         job = cls(job_uri="", config=config)
         job.job_name = job_name
         job.started = True
@@ -52,6 +59,7 @@ class TranscriptionJob:
 
     @property
     def status(self) -> TranscriptionStatus:
+        """Determine the status of a previously started job on AWS Transcribe."""
         assert self.started
         job = self.config.transcription.get_transcription_job(
             TranscriptionJobName=self.job_name
@@ -60,6 +68,7 @@ class TranscriptionJob:
         return TranscriptionStatus(job_status)
 
     def block_on_transcript(self) -> Any:
+        """Poll until the transcription job is finished and fetch the transcript."""
         while True:
             logging.info(f"Polling transcription job for {self.job_uri}")
             status = self.status
@@ -80,7 +89,8 @@ class TranscriptionJob:
             time.sleep(3.0)
 
     @staticmethod
-    def fetch_transcript(transcript_uri) -> Any:
+    def fetch_transcript(transcript_uri: str) -> Any:
+        """Fetch a finished transcript from AWS Transcribe."""
         response = requests.get(transcript_uri)
         if response.status_code != 200:
             logging.error("Failed to fetch finished transcript.")

@@ -1,3 +1,5 @@
+"""Utilities for templating new journal pages."""
+
 import datetime
 
 from .search import (
@@ -12,6 +14,7 @@ __all__ = ["new_monthly_page", "new_daily_page", "get_or_create_daily_page_id"]
 
 
 def new_monthly_page(for_date: datetime.datetime):
+    """Generate properties and block content for a monthyl journal page index."""
     title_for_page = f"Personal Journal {for_date.year}/{for_date.month}"
     properties = {"title": simple_title_properties(title_for_page)}
     children = []
@@ -19,6 +22,7 @@ def new_monthly_page(for_date: datetime.datetime):
 
 
 def new_daily_page(for_date: datetime.datetime):
+    """Generate properties and block content for a daily journal page."""
     title_for_page = f"Personal Journal {for_date.year}/{for_date.month}/{for_date.day}"
     properties = {"title": simple_title_properties(title_for_page)}
     children = [
@@ -32,6 +36,7 @@ def new_daily_page(for_date: datetime.datetime):
 
 
 def get_or_create_daily_page_id(notion, query_date: datetime.datetime) -> str:
+    """Fetch or create the ID of a daily journal page corresponding to `query_date`."""
     journal_page_id = get_by_month_index_id(notion)
     monthly_page_id = get_monthly_page_id(notion, query_date)
 

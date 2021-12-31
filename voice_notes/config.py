@@ -1,3 +1,4 @@
+"""Provide global configuration and API connections."""
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -20,6 +21,8 @@ ARCHIVE_PATH = ROOT_PATH / "archive" / "mp3s"
 
 @dataclass
 class Config:
+    """Provide configuration and API connections for AWS and Notion."""
+
     s3: Any = field(init=False)
     transcription: Any = field(init=False)
     voice_bucket: Any = field(init=False)
@@ -34,7 +37,7 @@ class Config:
 
     @staticmethod
     def inject_secrets():
-        """Cheap environment variables without dependencies."""
+        """Cheaply inject environment variables without dependencies."""
         for p in SECRETS_PATH.glob("*.secret.env"):
             with open(str(p.absolute())) as secret_f:
                 for line in secret_f.readlines():
@@ -47,12 +50,20 @@ class Config:
 
     @property
     def notion_client(self) -> Client:
+        """Cache the notion client as it is needed infrequently."""
         if not self._notion_client:
             self._notion_client = Client(auth=os.environ["NOTION_TOKEN"])
 
         return self._notion_client
 
     def __post_init__(self):
+        """Modify the environment and set up API connections.
+
+        1. Inject secrets into environment variables from .env files.
+        2. Ensure relevant paths for file ingress and archiving are in place.
+        3. Setup boto3 with S3 and Transcribe permissions.
+        4. Setup the Notion API client.
+        """
         self.inject_secrets()
 
         INGRESS_PATH.mkdir(exist_ok=True, parents=True)
@@ -72,10 +83,12 @@ class Config:
 
     @contextmanager
     def db(self):
+        """Open the note database."""
         with shelve.open(str(DB_PATH.absolute())) as db:
             yield db
 
     def get_by_name(self, name):
+        """Find a `VoiceNote` item by the filename associated to it."""
         with self.db() as db:
             return db[name]
 

@@ -1,3 +1,4 @@
+"""Provides structured representation of audio transcripts."""
 from dataclasses import dataclass, field
 import datetime
 import math
@@ -110,11 +111,14 @@ class Timestamp(TranscriptItem):
         return cls(delta=datetime.timedelta(seconds=start_time))
 
     def __str__(self) -> str:
+        """Provide str() for string output of transcripts."""
         return f"[{str(self.delta)}]"
 
 
 @dataclass
 class Transcript:
+    """Structured representation of an audio transcript."""
+
     timestamp_every: int = 60
     next_timestamp: int = field(init=False)
 
@@ -125,6 +129,7 @@ class Transcript:
 
     @classmethod
     def from_aws_transcribe_json(cls, aws_json):
+        """Create a transcript from the JSON results of an AWS Transcribe batch job."""
         if "jobName" in aws_json:
             aws_json = aws_json["results"]
 
@@ -143,6 +148,7 @@ class Transcript:
         return t
 
     def items_by_speaker(self) -> List[List[TranscriptItem]]:
+        """Group tokens in the transcript according to speaker segments."""
         by_speaker = []
         current = []
 
@@ -166,6 +172,7 @@ class Transcript:
         return by_speaker
 
     def to_string(self) -> str:
+        """Convert the transcript into a string for simple output."""
         results = []
 
         for group in self.items_by_speaker():
@@ -176,6 +183,7 @@ class Transcript:
         return "\n".join(results)
 
     def to_block(self, block_title):
+        """Convert the transcript into a Notion block object."""
         children = []
         for group in self.items_by_speaker():
             speaker = [g for g in group if isinstance(g, TextItem)][0].speaker
@@ -188,13 +196,16 @@ class Transcript:
         return Block.paragraph(block_title, children=children)
 
     def __post_init__(self):
+        """Initialize the next timestamp we will add according to desired frequency."""
         self.next_timestamp = self.timestamp_every
 
     @property
     def current_segment(self):
+        """Fetch the segment which we are consuming tokens for."""
         return self.segments[self.segment_index]
 
     def __iadd__(self, token):
+        """Add a token (from the token utterance stream) to the transcript."""
         assert isinstance(token, dict)
         token = AWSTranscriptItem(**token)
 

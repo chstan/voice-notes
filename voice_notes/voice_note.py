@@ -1,3 +1,4 @@
+"""Models the ETL pipeline for voice notes."""
 import warnings
 import datetime
 import os
@@ -22,6 +23,8 @@ __all__ = ["VoiceNote", "VoiceNoteStatus"]
 
 
 class VoiceNoteStatus(int, Enum):
+    """Enumerates data transform/ETL stages for voice note transcription."""
+
     Ingress = 0
     Local = 10
     S3 = 20
@@ -30,6 +33,8 @@ class VoiceNoteStatus(int, Enum):
 
 
 def bump_status(status: VoiceNoteStatus):
+    """Conveniently set the status attribute after successful completion of an ETL step."""
+
     def inner_decorator(f: Callable):
         @functools.wraps(f)
         def wrapped_f(self, config: Config, *args):
@@ -45,12 +50,15 @@ def bump_status(status: VoiceNoteStatus):
 
 @dataclass
 class VoiceNote:
+    """Models the ETL pipeline for audio voice notes from S3, through transcription, to Notion embedding."""
+
     path: Path
     status: VoiceNoteStatus = VoiceNoteStatus.Ingress
     transcript: Any = field(default=None, repr=False)
 
     @property
     def ingress_relative_path(self) -> Optional[Path]:
+        """Determine the path for the associated media file relative the ingress location."""
         # a sanity check in order to ensure that we don't
         assert "mp3" in self.name
         try:
@@ -59,15 +67,12 @@ class VoiceNote:
             return None
 
     @property
-    def s3_url(self) -> str:
-        raise NotImplementedError
-
-    @property
     def name(self) -> str:
+        """Fetch the name from the filename of the original media."""
         return self.path.name
 
     def synchronize(self, config: Config):
-        """Runs the full ETL pipeline for an voice note as MP3."""
+        """Run the full ETL pipeline for an voice note as MP3."""
         self.cache_local(config)
         self.upload_to_s3(config)
         self.transcribe_on_s3(config)
@@ -75,7 +80,7 @@ class VoiceNote:
 
     @bump_status(VoiceNoteStatus.Local)
     def cache_local(self, config: Config):
-        """Moves file out of the ingress location into the archive and sets up DB tracking."""
+        """Move the file out of the ingress location into the archive and sets up DB tracking."""
         if self.status != VoiceNoteStatus.Ingress:
             return
 
@@ -96,7 +101,7 @@ class VoiceNote:
 
     @bump_status(VoiceNoteStatus.S3)
     def upload_to_s3(self, config: Config):
-        """Ensures that the file is uploaded to S3 for retention."""
+        """Ensure that the file is uploaded to S3 for retention."""
         if self.status != VoiceNoteStatus.Local:
             return
 
@@ -113,7 +118,7 @@ class VoiceNote:
 
     @bump_status(VoiceNoteStatus.Transcribed)
     def transcribe_on_s3(self, config: Config):
-        """Runs transcription for this media file on S3."""
+        """Run transcription for this media file on S3."""
         if self.status != VoiceNoteStatus.S3:
             return
 
@@ -133,6 +138,7 @@ class VoiceNote:
 
     @bump_status(VoiceNoteStatus.Transcribed)
     def attach_existing_transcript(self, config: Config, job_name: str):
+        """Attach and import a transcript from a previous AWS Transcribe `job_name`."""
         assert self.status == VoiceNoteStatus.S3
 
         job = TranscriptionJob.from_existing_job(config, job_name)
@@ -145,12 +151,17 @@ class VoiceNote:
 
     @bump_status(VoiceNoteStatus.S3)
     def reset_transcript(self, config: Config):
+        """Reset the stage of this note back to before transcription happened.
+
+        This was used a few times while tweaking the AWS Transcribe settings for good results.
+        """
         assert self.status > VoiceNoteStatus.S3
 
         self.transcript = None
         return True
 
     def to_block(self, file=True):
+        """Convert this voice note to a Notion block object with S3 link."""
         assert self.status >= VoiceNoteStatus.Transcribed
         t = Transcript.from_aws_transcribe_json(self.transcript["results"])
         block = t.to_block(RichText.bold(self.name))
@@ -167,6 +178,7 @@ class VoiceNote:
 
     @bump_status(VoiceNoteStatus.Notion)
     def add_to_notion(self, config: Config):
+        """Synchronize the voice note to the appropriate Notion planning page."""
         if self.status == VoiceNoteStatus.Notion:
             return
 
@@ -180,6 +192,7 @@ class VoiceNote:
 
     @property
     def date(self) -> datetime.datetime:
+        """Determine the date for the voice note from the filename."""
         date, _time = self.name.split("_")
         year = int(f"20{date[:2]}")
         month = int(date[2:4])
