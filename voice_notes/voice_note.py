@@ -193,7 +193,7 @@ class VoiceNote:
     @property
     def date(self) -> datetime.datetime:
         """Determine the date for the voice note from the filename."""
-        date, _time = self.name.split("_")
+        date = self.name.split("_")[0]
         year = int(f"20{date[:2]}")
         month = int(date[2:4])
         day = int(date[4:])
