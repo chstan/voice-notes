@@ -3,7 +3,7 @@
 import datetime
 
 from .search import (
-    PageResult,
+    Page,
     get_by_month_index_id,
     get_daily_page_id,
     get_monthly_page_id,
@@ -48,7 +48,7 @@ def get_or_create_daily_page_id(notion, query_date: datetime.datetime) -> str:
             properties=properties,
             children=children,
         )
-        monthly_page_id = PageResult(**created_page).id
+        monthly_page_id = Page(**created_page).id
 
     # Check if we need to make a daily level organization page
     daily_page_id = get_daily_page_id(notion, query_date)
@@ -60,6 +60,6 @@ def get_or_create_daily_page_id(notion, query_date: datetime.datetime) -> str:
             properties=properties,
             children=children,
         )
-        daily_page_id = PageResult(**created_page).id
+        daily_page_id = Page(**created_page).id
 
     return daily_page_id
