@@ -1,15 +1,20 @@
+"""Utility script providing item level modification and introspection."""
 import argparse
 from enum import Enum
 from voice_notes import global_config, VoiceNote, Transcript
 
 
 class ItemAction(str, Enum):
+    """Describes actions which can be performed on individual `VoiceNote`s."""
+
     Info = "info"
     Delete = "delete"
     ResetTranscript = "reset-transcript"
     AttachTranscript = "attach-transcript"
+    Synchronize = "synchronize"
 
     def __str__(self) -> str:
+        """Provide str() for argparse help text."""
         return self.value
 
 
@@ -48,6 +53,8 @@ if __name__ == "__main__":
             del db[args.file]
     elif args.action == ItemAction.ResetTranscript:
         item.reset_transcript(global_config)
+    elif args.action == ItemAction.Synchronize:
+        item.synchronize(global_config)
     elif args.action == ItemAction.AttachTranscript:
         if args.job is not None:
             parser.error(
