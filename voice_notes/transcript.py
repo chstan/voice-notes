@@ -188,9 +188,16 @@ class Transcript:
         for group in self.items_by_speaker():
             speaker = [g for g in group if isinstance(g, TextItem)][0].speaker
             text_items = [RichText.bold(speaker), RichText.plain_text(": ")]
+
+            spacer = ""
             for g in group:
+                if isinstance(g, TextItem):
+                    g.text = f"{spacer}{g.text} "
+                    spacer = ""
+                else:
+                    spacer = " "
+
                 text_items.append(g.to_rich_text())
-                text_items.append(RichText.plain_text(" "))
             children.append(Block.paragraph(text_items))
 
         return Block.paragraph(block_title, children=children)
