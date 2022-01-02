@@ -79,9 +79,7 @@ def get_monthly_page_id(notion, query_date: datetime.datetime) -> Optional[str]:
 
 def get_daily_page_id(notion, query_date: datetime.datetime) -> Optional[str]:
     """Fetch the ID of a daily journal page for `query_date`."""
-    daily_slug = f"{query_date.year}/{query_date.month}/{query_date.day}"
-    page_search = notion.search(query=f"Personal Journal {daily_slug}")["results"]
-    results = [Page(**p) for p in page_search]
-
-    assert len(results) < 2
-    return results[0].id if results else None
+    daily_slug = (
+        f"Personal Journal {query_date.year}/{query_date.month}/{query_date.day}"
+    )
+    return get_page_matching_exact_title(notion, daily_slug)
