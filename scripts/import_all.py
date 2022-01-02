@@ -25,19 +25,11 @@ if __name__ == "__main__":
             continue
 
         vnote = VoiceNote(item)
-        try:
-            vnote.synchronize(global_config)
-        except Exception as e:
-            logging.error(f"Unhandled exception: {e}. Continuing.")
-            continue
+        vnote.safe_synchronize(global_config)
 
     logging.info("Checking to see if previously imported need processing...")
     with global_config.db() as db:
         items = sorted(list(dict(db).values()), key=lambda item: item.name)
 
     for item in tqdm(items):
-        try:
-            item.synchronize(global_config)
-        except Exception as e:
-            logging.error(f"Unhandled exception: {e}. Continuing.")
-            continue
+        item.safe_synchronize(global_config)

@@ -14,7 +14,7 @@ from botocore.exceptions import ClientError
 from voice_notes.notion.basics import RichText, Block
 from voice_notes.notion.search import get_daily_page_id
 
-from voice_notes.transcript import Transcript
+from voice_notes.transcript import FormattingSettings, NoSpeakersException, Transcript
 
 from .transcription import TranscriptionJob
 from .config import Config, INGRESS_PATH, ARCHIVE_PATH
@@ -30,6 +30,7 @@ class VoiceNoteStatus(int, Enum):
     S3 = 20
     Transcribed = 30
     Notion = 40
+    Evicted = 50
 
 
 def bump_status(status: VoiceNoteStatus):
@@ -40,8 +41,7 @@ def bump_status(status: VoiceNoteStatus):
         def wrapped_f(self, config: Config, *args):
             if f(self, config, *args):
                 self.status = status
-                with config.db() as db:
-                    db[self.name] = self
+                config.save(self)
 
         return wrapped_f
 
@@ -70,6 +70,13 @@ class VoiceNote:
     def name(self) -> str:
         """Fetch the name from the filename of the original media."""
         return self.path.name
+
+    def safe_synchronize(self, config: Config):
+        """Log errors from synchronization."""
+        try:
+            self.synchronize(config)
+        except Exception as e:
+            logging.error(f"Unhandled exception: {e}.")
 
     def synchronize(self, config: Config):
         """Run the full ETL pipeline for an voice note as MP3."""
@@ -163,7 +170,20 @@ class VoiceNote:
     def to_block(self, file=True):
         """Convert this voice note to a Notion block object with S3 link."""
         assert self.status >= VoiceNoteStatus.Transcribed
-        t = Transcript.from_aws_transcribe_json(self.transcript["results"])
+
+        settings = FormattingSettings()
+        t = Transcript.from_aws_transcribe_json(
+            self.transcript["results"],
+            settings=settings,
+        )
+        if len(t.items_by_speaker()) > 95:
+            logging.warn("Concatenating speakers!")
+            settings = FormattingSettings(break_speakers=False)
+            t = Transcript.from_aws_transcribe_json(
+                self.transcript["results"],
+                settings=settings,
+            )
+
         block = t.to_block(RichText.bold(self.name))
 
         if file:
@@ -179,13 +199,21 @@ class VoiceNote:
     @bump_status(VoiceNoteStatus.Notion)
     def add_to_notion(self, config: Config):
         """Synchronize the voice note to the appropriate Notion planning page."""
-        if self.status == VoiceNoteStatus.Notion:
+        if self.status >= VoiceNoteStatus.Notion:
             return
 
         page_id = get_daily_page_id(config.notion_client, self.date)
+
+        try:
+            block_children = self.to_block()
+        except NoSpeakersException:
+            self.status = VoiceNoteStatus.Evicted
+            config.save(self)
+            return
+
         config.notion_client.blocks.children.append(
             block_id=page_id,
-            children=[self.to_block()],
+            children=[block_children],
         )
 
         return True

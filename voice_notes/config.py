@@ -92,5 +92,10 @@ class Config:
         with self.db() as db:
             return db[name]
 
+    def save(self, note):
+        """Save the note to the notes database."""
+        with self.db() as db:
+            db[note.name] = note
+
 
 config = Config()

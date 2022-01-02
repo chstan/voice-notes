@@ -1,12 +1,39 @@
 """Provides structured representation of audio transcripts."""
 from dataclasses import dataclass, field
 import datetime
+import logging
 import math
 from typing import Any, Dict, List, Optional
 
 from voice_notes.notion.basics import RichText, Block
 
-__all__ = ["Transcript"]
+__all__ = ["Transcript", "FormattingSettings", "NoSpeakersException"]
+
+
+class NoSpeakersException(Exception):
+    """Control flow exception used to evict short (accidental) notes."""
+
+
+@dataclass
+class FormattingSettings:
+    """Controls formatting, principally paragraph breaks.
+
+    This is especially relevant because of a limit on the number of children
+    per block created in the Notion API.
+
+    As a stopgap, we don't break speakers or segments when the number of blocks
+    that would be created is otherwise too large.
+
+    A more sustainable option in the future would be to improve the
+    use of the Notion API and make several API calls to synchronize the
+    transcribed note. We can try this if it turns out to be a problem.
+    Realistically though, the diarization is only so good on AWS Transcribe anyway:
+    I have to do a little cleanup on complex notes if I care about speakers and it's
+    straightforward to put in paragraph breaks.
+    """
+
+    break_speakers: bool = True
+    break_segments: bool = False
 
 
 @dataclass
@@ -55,7 +82,7 @@ class TranscriptItem:
     def to_rich_text(self):
         raise NotImplementedError
 
-    def accepts(self, other: AWSTranscriptItem) -> bool:
+    def accepts(self, other: AWSTranscriptItem, settings: FormattingSettings) -> bool:
         return False
 
 
@@ -68,13 +95,13 @@ class TextItem(TranscriptItem):
     def to_rich_text(self):
         return RichText.plain_text(self.text)
 
-    def accepts(self, other: AWSTranscriptItem) -> bool:
+    def accepts(self, other: AWSTranscriptItem, settings: FormattingSettings) -> bool:
         if not isinstance(other, AWSTranscriptItem):
             return False
 
-        if other.speaker != self.speaker:
+        if settings.break_speakers and (other.speaker != self.speaker):
             return False
-        elif other.segment.index != self.segment_index:
+        elif settings.break_segments and (other.segment.index != self.segment_index):
             return False
 
         return True
@@ -127,15 +154,21 @@ class Transcript:
     segment_index: int = 0
     n_speakers: int = 0
 
+    settings: FormattingSettings = field(default_factory=FormattingSettings)
+
     @classmethod
-    def from_aws_transcribe_json(cls, aws_json):
+    def from_aws_transcribe_json(cls, aws_json, **kwargs):
         """Create a transcript from the JSON results of an AWS Transcribe batch job."""
         if "jobName" in aws_json:
             aws_json = aws_json["results"]
 
-        t = cls()
+        t = cls(**kwargs)
 
-        t.n_speakers = aws_json["speaker_labels"]["speakers"]
+        try:
+            t.n_speakers = aws_json["speaker_labels"]["speakers"]
+        except KeyError:
+            raise NoSpeakersException
+
         t.segments = [
             AWSSegment(index=i, **s)
             for i, s in enumerate(aws_json["speaker_labels"]["segments"])
@@ -226,7 +259,7 @@ class Transcript:
             self.items.append(Timestamp.from_start_time(token.start_time))
             self.next_timestamp += self.timestamp_every
 
-        if self.items and self.items[-1].accepts(token):
+        if self.items and self.items[-1].accepts(token, self.settings):
             self.items[-1] += token
         else:
             self.items.append(
