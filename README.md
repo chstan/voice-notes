@@ -24,3 +24,9 @@ load the profile from environment variables rather than through the profile name
 
 A few other pieces of configuration are hardcoded. Some, like the name of the bucket on S3 used for mp3 storage, can be
 refactored. Others, like my conventions on the structure of my Notion agenda page require just a little bit more work.
+
+# Quickstart (for Conrad)
+
+```bash
+$> poetry run python scripts/import_all.py
+```
