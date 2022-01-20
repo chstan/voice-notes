@@ -25,12 +25,12 @@ __all__ = ["VoiceNote", "VoiceNoteStatus"]
 class VoiceNoteStatus(int, Enum):
     """Enumerates data transform/ETL stages for voice note transcription."""
 
-    Ingress = 0
-    Local = 10
-    S3 = 20
-    Transcribed = 30
-    Notion = 40
-    Evicted = 50
+    Ingress = 0  # Waiting for processing
+    Local = 10  # Saved in on disk archive only
+    S3 = 20  # Saved on S3
+    Transcribed = 30  # Finished AWS Transcribe job
+    Notion = 40  # Formatted and synchronized to Notion
+    Evicted = 50  # Item has no speech or was removed by user
 
 
 def bump_status(status: VoiceNoteStatus):
